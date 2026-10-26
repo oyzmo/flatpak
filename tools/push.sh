@@ -11,7 +11,7 @@ err() { printf '\033[31m✘ %s\033[0m\n' "$*" >&2; }
 # Fail fast, and say why, when GitHub can't be reached over SSH, instead of
 # hanging for minutes on the connect (port 22 is blocked on some networks).
 export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -o ConnectTimeout=10}"
-gh_ssh="$(ssh -o ConnectTimeout=10 -T git@github.com 2>&1 || true)"
+gh_ssh="$(ssh -o ConnectTimeout=10 -T git@github.com </dev/null 2>&1 || true)"
 case "$gh_ssh" in
     *"successfully authenticated"*) ;;
     *)  echo "GitHub can't be reached over SSH: ${gh_ssh%%$'\n'*}" >&2
