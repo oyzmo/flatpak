@@ -10,6 +10,7 @@
 !/*.flatpakref
 !/*.flatpakrepo
 !/repo/
+!/tools/
 # ostree scratch space and lock, never part of the published repo
 /repo/tmp/
 /repo/.lock
