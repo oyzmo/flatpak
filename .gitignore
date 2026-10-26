@@ -1,0 +1,15 @@
+# Allowlist: only the public site is committed. The signing key lives in
+# ~/.local/share/oyzmo-flatpak/ and must never land here.
+/*
+!/.gitignore
+!/.nojekyll
+!/CNAME
+!/README.md
+!/index.html
+!/oyzmo.gpg
+!/*.flatpakref
+!/*.flatpakrepo
+!/repo/
+# ostree scratch space and lock, never part of the published repo
+/repo/tmp/
+/repo/.lock

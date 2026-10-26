@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#7FA07A">
+<title>oyzmo Flatpak</title>
+<style>
+  :root { --bg: #FBF5EA; --fg: #4A3428; --muted: #6B5240; --accent: #4F6E4A; --card: #F4E7D3; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #2E2019; --fg: #F4E7D3; --muted: #D9C7AE; --accent: #A9C7A4; --card: #4A3428; }
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.55 system-ui, sans-serif; }
+  main { max-width: 40rem; margin: 0 auto; padding: 2.5rem 16px; }
+  h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+  p.lead { margin-top: 0; color: var(--muted); }
+  a { color: var(--accent); }
+  section { background: var(--card); border-radius: 12px; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+  h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+  code { font-size: .9em; overflow-wrap: anywhere; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: .5rem 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>oyzmo Flatpak</h1>
+  <p class="lead">Apps by oyzmo, with updates through GNOME Software.</p>
+  <section>
+    <h2>Bindle</h2>
+    <p>A small GNOME Markdown editor. <a href="bindle.flatpakref">Install Bindle</a> (opens in GNOME Software), or:</p>
+    <pre><code>flatpak install https://flatpak.oyzmo.no/bindle.flatpakref</code></pre>
+  </section>
+  <p>More about the apps at <a href="https://oyzmo.no/apps">oyzmo.no/apps</a>.</p>
+</main>
+</body>
+</html>
