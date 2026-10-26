@@ -67,16 +67,28 @@ mapfile -t refs < <(ostree refs --repo="$SRC" \
 [ ${#refs[@]} -gt 0 ] || { err "$SRC holds no build of $APP_ID."; exit 1; }
 
 bold "Signing $NAME $VERSION into $REPO…"
+heads() { local r; for r in "${refs[@]}"; do ostree rev-parse --repo="$REPO" "$r" 2>/dev/null || echo none; done; }
+before="$(heads)"
 for ref in "${refs[@]}"; do
     # Unchanged content (a rebuild of the same version) adds no commit.
     flatpak build-commit-from "${sign[@]}" --no-update-summary \
         --src-repo="$SRC" --src-ref="$ref" --subject="$NAME $VERSION" "$REPO" "$ref"
 done
+# Nothing new: leave the summary alone too. Re-signing it would change files
+# and make a site commit that publishes nothing.
+changed=0
+[ "$(heads)" = "$before" ] || changed=1
 
-bold "Updating the summary, appstream and deltas…"
-flatpak build-update-repo "${sign[@]}" --title=oyzmo \
-    --homepage=https://oyzmo.no/apps --gpg-import="$SITE/oyzmo.gpg" \
-    --generate-static-deltas --prune --prune-depth="$KEEP_DEPTH" "$REPO" >/dev/null
+if [ "$changed" = 1 ]; then
+    bold "Updating the summary, appstream and deltas…"
+    flatpak build-update-repo "${sign[@]}" --title=oyzmo \
+        --homepage=https://oyzmo.no/apps --gpg-import="$SITE/oyzmo.gpg" \
+        --generate-static-deltas --prune --prune-depth="$KEEP_DEPTH" "$REPO" >/dev/null
+else
+    # build-commit-from still writes the commit object it then discards;
+    # drop what no ref reaches, so the site's git tree stays clean.
+    ostree prune --repo="$REPO" --refs-only >/dev/null
+fi
 # The checkouts live on a mount that has written 0-byte files before; never
 # publish a repo that doesn't verify.
 ostree fsck --repo="$REPO" >/dev/null || { err "$REPO failed ostree fsck — don't push it."; exit 1; }
@@ -93,11 +105,13 @@ cp "$stage/bundle.flatpak" "$BUNDLE"
 [ "$(stat -c%s "$BUNDLE")" = "$(stat -c%s "$stage/bundle.flatpak")" ] \
     || { err "Copying the bundle to $BUNDLE came out wrong."; exit 1; }
 
-git -C "$SITE" add -A
-if git -C "$SITE" diff --cached --quiet; then
+# Only repo/: other edits to the site are committed on their own, never swept
+# into an app's version commit.
+if [ "$changed" = 0 ]; then
     ok "$NAME $VERSION was already published; bundle written to $BUNDLE"
 else
-    git -C "$SITE" commit -q -m "$NAME $VERSION"
+    git -C "$SITE" add -A -- repo
+    git -C "$SITE" commit -q -m "$NAME $VERSION" -- repo
     ok "Published $NAME $VERSION into $SITE (committed) and wrote $BUNDLE"
     echo "  Make it live with: $SITE/tools/push.sh"
 fi
