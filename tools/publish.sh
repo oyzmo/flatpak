@@ -6,14 +6,16 @@
 # here), and commit the site. Pushing it live is tools/push.sh.
 #
 #   tools/publish.sh <local-repo> <app-id> <name> <version> <bundle-path>
+#   tools/publish.sh --check    # can this machine publish? (key and tools)
+#
+# The apps' build scripts run --check before their build whenever this site is
+# present, so a machine without the key stops early instead of quietly making
+# a bundle that would never get updates.
 #
 # Environment: FLATPAK_URL (default https://flatpak.oyzmo.no/repo/) — only the
 # bundle carries it, so a test can point it at a local web server.
 # FLATPAK_GNUPG — the signing key's GPG home; it never lives in this repo.
 set -euo pipefail
-
-[ $# -eq 5 ] || { sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
-SRC="$1" APP_ID="$2" NAME="$3" VERSION="$4" BUNDLE="$5"
 
 SITE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO="$SITE/repo"
@@ -28,8 +30,34 @@ bold() { printf '\033[1m%s\033[0m\n' "$*"; }
 ok()   { printf '\033[32m✔ %s\033[0m\n' "$*"; }
 err()  { printf '\033[31m✘ %s\033[0m\n' "$*" >&2; }
 
-gpg --homedir "$GNUPG" --list-secret-keys "$KEY" >/dev/null 2>&1 \
-    || { err "No signing key in $GNUPG."; exit 1; }
+check() {
+    local tool missing=()
+    for tool in flatpak ostree gpg git; do
+        command -v "$tool" >/dev/null || missing+=("$tool")
+    done
+    if [ ${#missing[@]} -gt 0 ]; then
+        err "Publishing to $SITE needs: ${missing[*]} — install them first."
+        return 1
+    fi
+    if ! gpg --homedir "$GNUPG" --list-secret-keys "$KEY" >/dev/null 2>&1; then
+        err "The Flatpak site is here ($SITE), but the signing key is not ($GNUPG)."
+        err "Stopping: a bundle built now would never get updates. Restore the key from the NAS:"
+        echo "    git clone softserve:oyzmo-flatpak-key.git /tmp/oyzmo-key" >&2
+        echo "    mkdir -p -m 700 $GNUPG" >&2
+        echo "    gpg --homedir $GNUPG --import /tmp/oyzmo-key/oyzmo-flatpak-key.asc" >&2
+        echo "    rm -rf /tmp/oyzmo-key" >&2
+        return 1
+    fi
+}
+
+if [ "${1:-}" = --check ]; then
+    check
+    exit
+fi
+[ $# -eq 5 ] || { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+SRC="$1" APP_ID="$2" NAME="$3" VERSION="$4" BUNDLE="$5"
+
+check || exit 1
 sign=(--gpg-sign="$KEY" --gpg-homedir="$GNUPG")
 
 # The app plus its own extensions (.Debug, .Locale), nothing else the local
