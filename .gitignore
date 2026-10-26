@@ -13,3 +13,10 @@
 # ostree scratch space and lock, never part of the published repo
 /repo/tmp/
 /repo/.lock
+# Never a private key, wherever it lands — not even inside repo/
+*.asc
+*.key
+*.rev
+*.kbx
+private-keys-v1.d/
+gnupg/
